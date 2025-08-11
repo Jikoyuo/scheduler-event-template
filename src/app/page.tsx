@@ -18,6 +18,14 @@ import {
   Typography,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import CustomButtonFilled from "@/components/button/CustomButtonFilled";
+import CustomTextField from "@/components/CustomTextfield";
+import DropdownListTime from "@/components/DropdownListTime";
+import operationalTimes from "@/data/operationalTimes";
+import DropdownList from "@/components/DropdownList";
+import doctor from "@/data/doctor";
+import location from "@/data/location";
+import scheduleType from "@/data/scheduleType";
 
 interface EventForm {
   title: string;
@@ -171,7 +179,20 @@ export default function CalendarPage() {
       quota: info.event.extendedProps.quota,
       backupQuota: info.event.extendedProps.backupQuota,
     });
-    setOpenEventDialog(true);
+    setForm((prev) => ({
+      ...prev,
+      title: info.event.title,
+      doctor: info.event.extendedProps.doctor,
+      location: info.event.extendedProps.location,
+      insurance: info.event.extendedProps.insurance,
+      startTime: info.event.extendedProps.startTime,
+      endTime: info.event.extendedProps.endTime,
+      quota: info.event.extendedProps.quota,
+      backupQuota: info.event.extendedProps.backupQuota,
+      type: info.event.extendedProps.type,
+    }));
+
+    // setOpenEventDialog(true);
     // const templateId = info.event.extendedProps.templateId;
     // setEvents((prev) =>
     //   prev.filter((e) => e.extendedProps.templateId !== templateId)
@@ -186,57 +207,145 @@ export default function CalendarPage() {
   };
 
   return (
-    <Grid container spacing={2} p={2} display={"flex"} flexDirection={"column"}>
+    <Grid
+      container
+      spacing={2}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+        justifyContent: "center",
+      }}
+    >
       <Grid item xs={3}>
-        <Box display="flex" flexDirection="column" gap={2}>
-          <TextField
-            label="Title"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-          />
-          <TextField
-            label="Doctor"
-            value={form.doctor}
-            onChange={(e) => setForm({ ...form, doctor: e.target.value })}
-          />
-          <TextField
-            label="Location"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-          />
-          <TextField
-            label="Type"
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-          />
-          <TextField
-            label="Insurance"
-            value={form.insurance}
-            onChange={(e) => setForm({ ...form, insurance: e.target.value })}
-          />
-          <TextField
-            label="Start Time"
-            type="time"
-            value={form.startTime}
-            onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-          />
-          <TextField
-            label="End Time"
-            type="time"
-            value={form.endTime}
-            onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-          />
-          <TextField
-            label="Quota"
-            value={form.quota}
-            onChange={(e) => setForm({ ...form, quota: e.target.value })}
-          />
-          <TextField
-            label="Backup Quota"
-            value={form.backupQuota}
-            onChange={(e) => setForm({ ...form, backupQuota: e.target.value })}
-          />
-
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            maxWidth: "95%",
+            maxHeight: "95%",
+            border: "1px solid transparent",
+            p: 2,
+            borderRadius: "16px",
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.35)",
+            marginLeft: "1%",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography>Nama Dokter</Typography>
+            <DropdownList
+              loading={false}
+              options={doctor}
+              onChange={(value) => setForm({ ...form, doctor: value })}
+              defaultValue={form.doctor}
+              placeholder="Pilih Dokter"
+            />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Typography>Judul Jadwal</Typography>
+            <CustomTextField
+              name="title"
+              value={form.title}
+              onChange={(e: { target: { value: any } }) =>
+                setForm({ ...form, title: e.target.value })
+              }
+              placeholder="Masukkan judul jadwal"
+            />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Typography>Lokasi</Typography>
+            <DropdownList
+              loading={false}
+              options={location}
+              onChange={(value) => setForm({ ...form, location: value })}
+              placeholder="Pilih Lokasi"
+              defaultValue={form.location}
+            />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Typography>Tipe Jadwal</Typography>
+            <DropdownList
+              loading={false}
+              options={scheduleType}
+              onChange={(value) => setForm({ ...form, type: value })}
+              placeholder="Pilih Tipe"
+              defaultValue={form.type}
+            />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Typography>Tipe Jaminan</Typography>
+            <CustomTextField
+              name="insurance"
+              value={form.insurance}
+              onChange={(e: { target: { value: any } }) =>
+                setForm({ ...form, insurance: e.target.value })
+              }
+              placeholder="Masukkan jaminan"
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              width: "100%",
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{ display: "flex", flexDirection: "column", width: "50%" }}
+            >
+              <Typography>Jam Mulai</Typography>
+              <DropdownListTime
+                loading={false}
+                placeholder="Jam mulai"
+                options={operationalTimes}
+                onChange={(value) => {
+                  console.log("Waktu dipilih:", value);
+                  setForm({ ...form, startTime: value });
+                }}
+                defaultValue={form.startTime}
+              />
+            </Box>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", width: "50%" }}
+            >
+              <Typography>Jam Selesai</Typography>
+              <DropdownListTime
+                loading={false}
+                placeholder="Jam selesai"
+                options={operationalTimes}
+                onChange={(value) => {
+                  console.log("Waktu dipilih:", value);
+                  setForm({ ...form, endTime: value });
+                }}
+                defaultValue={form.endTime}
+              />
+            </Box>
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Typography>Quota</Typography>
+            <CustomTextField
+              name="quota"
+              value={form.quota}
+              onChange={(e: { target: { value: any } }) =>
+                setForm({ ...form, quota: e.target.value })
+              }
+              placeholder="Masukkan quota"
+            />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Typography>Backup Quota</Typography>
+            <CustomTextField
+              name="backupQuota"
+              value={form.backupQuota}
+              onChange={(e: { target: { value: any } }) =>
+                setForm({ ...form, backupQuota: e.target.value })
+              }
+              placeholder="Masukkan quota cadangan"
+            />
+          </Box>
           <Box>
             {weekdays.map((day, i) => (
               <FormControlLabel
@@ -251,10 +360,12 @@ export default function CalendarPage() {
               />
             ))}
           </Box>
-
-          <Button variant="contained" onClick={handleSubmit}>
-            Tambah Jadwal
-          </Button>
+          <CustomButtonFilled
+            text="Tambah Jadwal"
+            onClick={handleSubmit}
+            variant="outlined"
+            type="submit"
+          />
         </Box>
         <StyledDialog open={openEventDialog}>
           <Box
