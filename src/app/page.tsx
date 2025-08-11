@@ -1,11 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import rrulePlugin from "@fullcalendar/rrule";
 import { RRule } from "rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 import {
   Button,
@@ -110,6 +114,19 @@ export default function CalendarPage() {
 
   const [events, setEvents] = useState<RecurringEvent[]>([]);
   const [templateIdSelected, setTemplateIdSelected] = useState<String>("");
+  const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+  const calendarRef = useRef<any>(null);
+
+  const handleDateCalendarChange = (newValue: Dayjs) => {
+    setCurrentDate(newValue);
+    if (calendarRef.current) {
+      calendarRef.current.getApi().gotoDate(newValue.toDate());
+    }
+  };
+
+  const handleFullCalendarDatesSet = (arg: any) => {
+    setCurrentDate(dayjs(arg.start));
+  };
 
   const handleCheckbox = (index: number) => {
     setForm((prev) => {
@@ -161,7 +178,7 @@ export default function CalendarPage() {
   };
 
   useEffect(() => {
-    console.log("all data: ", events);
+    console.log("all data: ", events.length);
   }, [events]);
 
   const handleEventClick = (info: any) => {
@@ -391,25 +408,76 @@ export default function CalendarPage() {
         </StyledDialog>
       </Grid>
 
-      {/* <Grid item xs={9}> */}
-      <FullCalendar
-        plugins={[
-          timeGridPlugin,
-          interactionPlugin,
-          rrulePlugin,
-          dayGridPlugin,
-        ]}
-        initialView="timeGridWeek"
-        events={events}
-        eventClick={handleEventClick}
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          gap: 2,
+          bgcolor: "red",
+          width: "100%",
         }}
-        height="90vh"
-        nowIndicator={true}
-      />
+      >
+        {/* <Grid item xs={9}> */}
+        <Box sx={{ bgcolor: "yellow" }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DateCalendar
+              slotProps={{
+                day: {
+                  sx: {
+                    "&.Mui-selected": {
+                      borderColor: "#76B732",
+                    },
+                    "&.Mui-selected:focus": {
+                      backgroundColor: "transparent",
+                      color: "black",
+                      borderColor: "#76B732",
+                    },
+                  },
+                },
+              }}
+            />
+          </LocalizationProvider>
+          {events.length > 0 &&
+            events.map((ev, index) => (
+              <Box>
+                <Typography key={index} variant="body1">
+                  {events[index].extendedProps.doctor}
+                </Typography>
+                <Typography key={index} variant="body1">
+                  {events[index].extendedProps.startTime}
+                </Typography>
+                <Typography key={index} variant="body1">
+                  {events[index].extendedProps.doctor}
+                </Typography>
+              </Box>
+            ))}
+        </Box>
+        <Box sx={{ bgcolor: "blue", width: "76%" }}>
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[
+              timeGridPlugin,
+              interactionPlugin,
+              rrulePlugin,
+              dayGridPlugin,
+            ]}
+            locale="id"
+            timeZone="local"
+            // headerToolbar={false}
+            initialView="dayGridMonth"
+            events={events}
+            eventClick={handleEventClick}
+            headerToolbar={{
+              left: "prev,next",
+              center: "title",
+              // right: "dayGridMonth,timeGridWeek,timeGridDay",
+              right: "dayGridMonth,timeGridDay",
+            }}
+            height="90vh"
+            datesSet={handleFullCalendarDatesSet} // detect bulan berubah
+          />
+        </Box>
+      </Box>
       {/* </Grid> */}
     </Grid>
   );
