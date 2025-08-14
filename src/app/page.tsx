@@ -12,16 +12,15 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 
 import {
-  Button,
   Checkbox,
   FormControlLabel,
-  TextField,
   Grid,
   Box,
-  Dialog,
   Typography,
+  Container,
+  styled,
+  IconButton,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import CustomButtonFilled from "@/components/button/CustomButtonFilled";
 import CustomTextField from "@/components/CustomTextfield";
 import DropdownListTime from "@/components/DropdownListTime";
@@ -30,57 +29,122 @@ import DropdownList from "@/components/DropdownList";
 import doctor from "@/data/doctor";
 import location from "@/data/location";
 import scheduleType from "@/data/scheduleType";
+import { ScheduleTypes } from "@/types/schedule";
+import CardScheduleInfo from "@/components/CardScheduleInfo";
+import { ExpandMore, ExpandLess } from "@mui/icons-material";
+//array string untuk define hari dalam 1 minggu
+const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-interface EventForm {
-  title: string;
-  doctor: string;
-  location: string;
-  type: string;
-  insurance: string;
-  startTime: string;
-  endTime: string;
-  quota: string;
-  backupQuota: string;
-  repeatDays: number[]; // 0 = Monday
-}
+const GlobalStyles = styled("style")`
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
 
-interface RecurringEvent {
-  id: string;
-  title: string;
-  rrule: any;
-  extendedProps: any;
-}
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+`;
 
-interface eventDetailDialog {
-  id: string;
-  title: string;
-  doctor: string;
-  location: string;
-  type: string;
-  insurance: string;
-  startTime: string;
-  endTime: string;
-  quota: string;
-  backupQuota: string;
-}
+const StyledContainer = styled(Container)(({ theme }) => ({
+  borderRadius: "16px",
+  minWidth: "100%",
+  padding: theme.spacing(4),
+  "& .fc-event": {
+    border: "none",
+    borderRadius: theme.shape.borderRadius,
+    color: "#0F0F14",
+    display: "flex",
+    fontSize: "0.875rem",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    backgroundColor: "#B8E0C9 !important",
+    width: "60%",
+  },
+  "& .fc-daygrid-event.fc-event-end": {
+    marginLeft: "23.5%",
+  },
 
-const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  "& .fc-timegrid-slot": {
+    borderBottom: "1px solid #e0e0e0",
+    height: "75px",
+  },
+  "& .fc-daygrid-day-number": {
+    color: "black",
+    marginRight: "40%",
+    marginTop: "5%",
+  },
+  "& .fc-col-header-cell": {
+    border: "none",
+    textAlign: "center",
+  },
+  "& .fc-now-indicator-line": {
+    backgroundColor: "#00FF00 !important",
+    height: "2px !important",
+    width: "1px !important",
+  },
+  "& .fc-now-indicator-arrow": {
+    borderTopColor: "#00FF00 !important",
+  },
+  "& .fc-day-today .fc-daygrid-day-number": {
+    backgroundColor: "#76B732",
+    borderRadius: "60%",
+    padding: "4px",
+    color: "white",
+  },
+  "& .fc-day-today": {
+    backgroundColor: "inherit !important",
+  },
+  "& .fc-day-today .fc-daygrid-day-number::before": {
+    content: '""',
+    display: "block",
+    width: "100%",
+    height: "100%",
+    borderRadius: "60%",
+    border: "2px solid #76B732",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    zIndex: 1,
+  },
+  "@media (max-width: 768px)": {
+    "& .fc-timegrid-slot-label": {
+      fontSize: "0.8rem",
+    },
+    "& .fc-timegrid-slot-frame": {
+      padding: "5px",
+    },
+  },
+}));
 
 export default function CalendarPage() {
-  const [eventDetails, setEventDetails] = useState<eventDetailDialog>({
-    id: "",
-    title: "",
-    doctor: "",
-    location: "",
-    type: "",
-    insurance: "",
-    startTime: "",
-    endTime: "",
-    quota: "",
-    backupQuota: "",
-  });
-  const [openEventDialog, setOpenEventDialog] = useState<boolean>(false);
-  const [form, setForm] = useState<EventForm>({
+  type DayCode = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
+  const [open, setOpen] = useState(false);
+  const daysEnToId: Record<DayCode, string> = {
+    MO: "Sen",
+    TU: "Sel",
+    WE: "Rab",
+    TH: "Kam",
+    FR: "Jum",
+    SA: "Sab",
+    SU: "Ming",
+  };
+  // state untuk mengatur default value dari form
+  const [form, setForm] = useState<ScheduleTypes.EventForm>({
     title: "",
     doctor: "",
     location: "",
@@ -93,42 +157,32 @@ export default function CalendarPage() {
     repeatDays: [],
   });
 
-  const StyledDialog = styled(Dialog)(({ theme }) => ({
-    "& .MuiPaper-root": {
-      position: "fixed",
-      top: 0,
-      right: 0,
-      margin: 0,
-      borderTopLeftRadius: "16px",
-      borderBottomLeftRadius: "16px",
-      minHeight: "100%",
-      width: "40vw",
-      maxWidth: "none",
-      boxShadow: theme.shadows[5],
-      animation: "slideIn 0.5s ease-out",
-      "&.slideOut": {
-        animation: "slideOut 0.5s ease-in forwards",
-      },
-    },
-  }));
-
-  const [events, setEvents] = useState<RecurringEvent[]>([]);
+  const [events, setEvents] = useState<ScheduleTypes.RecurringEvent[]>([]);
   const [templateIdSelected, setTemplateIdSelected] = useState<String>("");
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const calendarRef = useRef<any>(null);
 
-  const handleDateCalendarChange = (newValue: Dayjs) => {
-    setCurrentDate(newValue);
-    if (calendarRef.current) {
-      calendarRef.current.getApi().gotoDate(newValue.toDate());
-    }
-  };
+  const dayMap = {
+    SU: 0,
+    MO: 1,
+    TU: 2,
+    WE: 3,
+    TH: 4,
+    FR: 5,
+    SA: 6,
+  } as const;
 
+  type DayCodes = keyof typeof dayMap;
+
+  function convertDaysToNumbers(days: DayCodes[]): number[] {
+    return days.map((day) => dayMap[day]);
+  }
   const handleFullCalendarDatesSet = (arg: any) => {
     setCurrentDate(dayjs(arg.start));
   };
 
   const handleCheckbox = (index: number) => {
+    console.log("p: ", index);
     setForm((prev) => {
       const exists = prev.repeatDays.includes(index);
       return {
@@ -140,9 +194,10 @@ export default function CalendarPage() {
     });
   };
 
+  //fungsi untuk men-generate pengulangan hari yang dipilih menggunakan rrule dari FullCalendar
   const generateRecurringRule = () => {
     const byDay = form.repeatDays.map(
-      (d) => ["MO", "TU", "WE", "TH", "FR", "SA", "SU"][d]
+      (d) => ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][d]
     );
 
     return {
@@ -154,13 +209,23 @@ export default function CalendarPage() {
     };
   };
 
+  //fungsi submit untuk emnyimapn data event yang sudah dibuat user
   const handleSubmit = () => {
     const id = crypto.randomUUID();
+    const rule = generateRecurringRule();
+    console.log("RULE BASED: ", rule);
 
-    const newEvent: RecurringEvent = {
+    const clicked = rule.byweekday as DayCode[];
+
+    const translatedNum = convertDaysToNumbers(clicked);
+
+    const translatedIndo = clicked.map((day) => daysEnToId[day]);
+    console.log(translatedIndo);
+    //menyimpan event baru
+    const newEvent: ScheduleTypes.RecurringEvent = {
       id,
       title: form.title,
-      rrule: generateRecurringRule(),
+      rrule: rule,
       extendedProps: {
         doctor: form.doctor,
         location: form.location,
@@ -171,6 +236,9 @@ export default function CalendarPage() {
         quota: form.quota,
         backupQuota: form.backupQuota,
         templateId: id,
+        byweekday: rule.byweekday,
+        byweekdayTranslated: translatedNum,
+        byweekdayIndonesia: translatedIndo,
       },
     };
     console.log("data: ", newEvent);
@@ -181,21 +249,26 @@ export default function CalendarPage() {
     console.log("all data: ", events.length);
   }, [events]);
 
+  //untuk read data dari event yang di klik/di pilih
   const handleEventClick = (info: any) => {
-    console.log("clicked: ", info.event.extendedProps);
+    console.log("clicked: ", info.event.extendedProps.byweekday);
+    const result = convertDaysToNumbers(info.event.extendedProps.byweekday);
+    console.log(result);
     setTemplateIdSelected(info.event.extendedProps.templateId);
-    setEventDetails({
-      id: info.event.id,
-      title: info.event.title,
-      doctor: info.event.extendedProps.doctor,
-      location: info.event.extendedProps.location,
-      type: info.event.extendedProps.type,
-      insurance: info.event.extendedProps.insurance,
-      startTime: info.event.extendedProps.startTime,
-      endTime: info.event.extendedProps.endTime,
-      quota: info.event.extendedProps.quota,
-      backupQuota: info.event.extendedProps.backupQuota,
-    });
+    // setEventDetails({
+    //   id: info.event.id,
+    //   title: info.event.title,
+    //   doctor: info.event.extendedProps.doctor,
+    //   location: info.event.extendedProps.location,
+    //   type: info.event.extendedProps.type,
+    //   insurance: info.event.extendedProps.insurance,
+    //   startTime: info.event.extendedProps.startTime,
+    //   endTime: info.event.extendedProps.endTime,
+    //   quota: info.event.extendedProps.quota,
+    //   backupQuota: info.event.extendedProps.backupQuota,
+    // });
+
+    //menyimpan data event yang ingin di lihat agar muncul di form
     setForm((prev) => ({
       ...prev,
       title: info.event.title,
@@ -207,6 +280,7 @@ export default function CalendarPage() {
       quota: info.event.extendedProps.quota,
       backupQuota: info.event.extendedProps.backupQuota,
       type: info.event.extendedProps.type,
+      repeatDays: info.event.extendedProps.byweekdayTranslated,
     }));
 
     // setOpenEventDialog(true);
@@ -220,265 +294,298 @@ export default function CalendarPage() {
     setEvents((prev) =>
       prev.filter((e) => e.extendedProps.templateId !== templateId)
     );
-    setOpenEventDialog(false);
+    // setOpenEventDialog(false);
   };
 
   return (
-    <Grid
-      container
-      spacing={2}
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        p: 2,
-        justifyContent: "center",
-      }}
-    >
-      <Grid item xs={3}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            maxWidth: "95%",
-            maxHeight: "95%",
-            border: "1px solid transparent",
-            p: 2,
-            borderRadius: "16px",
-            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.35)",
-            marginLeft: "1%",
-          }}
-        >
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Typography>Nama Dokter</Typography>
-            <DropdownList
-              loading={false}
-              options={doctor}
-              onChange={(value) => setForm({ ...form, doctor: value })}
-              defaultValue={form.doctor}
-              placeholder="Pilih Dokter"
-            />
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Typography>Judul Jadwal</Typography>
-            <CustomTextField
-              name="title"
-              value={form.title}
-              onChange={(e: { target: { value: any } }) =>
-                setForm({ ...form, title: e.target.value })
-              }
-              placeholder="Masukkan judul jadwal"
-            />
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Typography>Lokasi</Typography>
-            <DropdownList
-              loading={false}
-              options={location}
-              onChange={(value) => setForm({ ...form, location: value })}
-              placeholder="Pilih Lokasi"
-              defaultValue={form.location}
-            />
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Typography>Tipe Jadwal</Typography>
-            <DropdownList
-              loading={false}
-              options={scheduleType}
-              onChange={(value) => setForm({ ...form, type: value })}
-              placeholder="Pilih Tipe"
-              defaultValue={form.type}
-            />
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Typography>Tipe Jaminan</Typography>
-            <CustomTextField
-              name="insurance"
-              value={form.insurance}
-              onChange={(e: { target: { value: any } }) =>
-                setForm({ ...form, insurance: e.target.value })
-              }
-              placeholder="Masukkan jaminan"
-            />
-          </Box>
+    <>
+      <GlobalStyles />
+      <Grid
+        container
+        spacing={2}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          p: 2,
+          justifyContent: "center",
+        }}
+      >
+        <StyledContainer>
+          <Grid item xs={3}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                maxWidth: "95%",
+                maxHeight: "95%",
+                border: "1px solid transparent",
+                p: 2,
+                borderRadius: "16px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.35)",
+                marginLeft: "1%",
+              }}
+            >
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Typography>Nama Dokter</Typography>
+                <DropdownList
+                  loading={false}
+                  options={doctor}
+                  onChange={(value) => setForm({ ...form, doctor: value })}
+                  defaultValue={form.doctor}
+                  placeholder="Pilih Dokter"
+                />
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Typography>Judul Jadwal</Typography>
+                <CustomTextField
+                  name="title"
+                  value={form.title}
+                  onChange={(e: { target: { value: any } }) =>
+                    setForm({ ...form, title: e.target.value })
+                  }
+                  placeholder="Masukkan judul jadwal"
+                />
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Typography>Lokasi</Typography>
+                <DropdownList
+                  loading={false}
+                  options={location}
+                  onChange={(value) => setForm({ ...form, location: value })}
+                  placeholder="Pilih Lokasi"
+                  defaultValue={form.location}
+                />
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Typography>Tipe Jadwal</Typography>
+                <DropdownList
+                  loading={false}
+                  options={scheduleType}
+                  onChange={(value) => setForm({ ...form, type: value })}
+                  placeholder="Pilih Tipe"
+                  defaultValue={form.type}
+                />
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Typography>Tipe Jaminan</Typography>
+                <CustomTextField
+                  name="insurance"
+                  value={form.insurance}
+                  onChange={(e: { target: { value: any } }) =>
+                    setForm({ ...form, insurance: e.target.value })
+                  }
+                  placeholder="Masukkan jaminan"
+                />
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "50%",
+                  }}
+                >
+                  <Typography>Jam Mulai</Typography>
+                  <DropdownListTime
+                    loading={false}
+                    placeholder="Jam mulai"
+                    options={operationalTimes}
+                    onChange={(value) => {
+                      console.log("Waktu dipilih:", value);
+                      setForm({ ...form, startTime: value });
+                    }}
+                    defaultValue={form.startTime}
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "50%",
+                  }}
+                >
+                  <Typography>Jam Selesai</Typography>
+                  <DropdownListTime
+                    loading={false}
+                    placeholder="Jam selesai"
+                    options={operationalTimes}
+                    onChange={(value) => {
+                      console.log("Waktu dipilih:", value);
+                      setForm({ ...form, endTime: value });
+                    }}
+                    defaultValue={form.endTime}
+                  />
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Typography>Quota</Typography>
+                <CustomTextField
+                  name="quota"
+                  value={form.quota}
+                  onChange={(e: { target: { value: any } }) =>
+                    setForm({ ...form, quota: e.target.value })
+                  }
+                  placeholder="Masukkan quota"
+                />
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Typography>Backup Quota</Typography>
+                <CustomTextField
+                  name="backupQuota"
+                  value={form.backupQuota}
+                  onChange={(e: { target: { value: any } }) =>
+                    setForm({ ...form, backupQuota: e.target.value })
+                  }
+                  placeholder="Masukkan quota cadangan"
+                />
+              </Box>
+              <Box>
+                {weekdays.map((day, i) => (
+                  <FormControlLabel
+                    key={day}
+                    control={
+                      <Checkbox
+                        checked={form.repeatDays.includes(i)}
+                        onChange={() => handleCheckbox(i)}
+                      />
+                    }
+                    label={day}
+                  />
+                ))}
+              </Box>
+              <CustomButtonFilled
+                text="Tambah Jadwal"
+                onClick={handleSubmit}
+                variant="outlined"
+                type="submit"
+              />
+            </Box>
+          </Grid>
+
           <Box
             sx={{
               display: "flex",
               flexDirection: "row",
-              justifyContent: "space-between",
+              gap: 2,
               width: "100%",
-              gap: 2,
             }}
           >
-            <Box
-              sx={{ display: "flex", flexDirection: "column", width: "50%" }}
-            >
-              <Typography>Jam Mulai</Typography>
-              <DropdownListTime
-                loading={false}
-                placeholder="Jam mulai"
-                options={operationalTimes}
-                onChange={(value) => {
-                  console.log("Waktu dipilih:", value);
-                  setForm({ ...form, startTime: value });
+            {/* <Grid item xs={9}> */}
+            <Box>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateCalendar
+                  slotProps={{
+                    day: {
+                      sx: {
+                        "&.Mui-selected": {
+                          borderColor: "#76B732",
+                        },
+                        "&.Mui-selected:focus": {
+                          backgroundColor: "transparent",
+                          color: "black",
+                          borderColor: "#76B732",
+                        },
+                      },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+              <Box
+                sx={{
+                  p: 2,
+                  border: "1px solid gray",
+                  borderRadius: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
                 }}
-                defaultValue={form.startTime}
-              />
-            </Box>
-            <Box
-              sx={{ display: "flex", flexDirection: "column", width: "50%" }}
-            >
-              <Typography>Jam Selesai</Typography>
-              <DropdownListTime
-                loading={false}
-                placeholder="Jam selesai"
-                options={operationalTimes}
-                onChange={(value) => {
-                  console.log("Waktu dipilih:", value);
-                  setForm({ ...form, endTime: value });
-                }}
-                defaultValue={form.endTime}
-              />
-            </Box>
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Typography>Quota</Typography>
-            <CustomTextField
-              name="quota"
-              value={form.quota}
-              onChange={(e: { target: { value: any } }) =>
-                setForm({ ...form, quota: e.target.value })
-              }
-              placeholder="Masukkan quota"
-            />
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Typography>Backup Quota</Typography>
-            <CustomTextField
-              name="backupQuota"
-              value={form.backupQuota}
-              onChange={(e: { target: { value: any } }) =>
-                setForm({ ...form, backupQuota: e.target.value })
-              }
-              placeholder="Masukkan quota cadangan"
-            />
-          </Box>
-          <Box>
-            {weekdays.map((day, i) => (
-              <FormControlLabel
-                key={day}
-                control={
-                  <Checkbox
-                    checked={form.repeatDays.includes(i)}
-                    onChange={() => handleCheckbox(i)}
-                  />
-                }
-                label={day}
-              />
-            ))}
-          </Box>
-          <CustomButtonFilled
-            text="Tambah Jadwal"
-            onClick={handleSubmit}
-            variant="outlined"
-            type="submit"
-          />
-        </Box>
-        <StyledDialog open={openEventDialog}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              fontSize: "16px",
-            }}
-          >
-            <Typography>id: {eventDetails.id}</Typography>
-            <Typography>title: {eventDetails.title}</Typography>
-            <Typography>doctor name: {eventDetails.doctor}</Typography>
-            <Typography>insurance: {eventDetails.insurance}</Typography>
-            <Typography>location: {eventDetails.location}</Typography>
-            <Typography>type: {eventDetails.type}</Typography>
-            <Typography>quota: {eventDetails.quota}</Typography>
-            <Typography>backup quota: {eventDetails.backupQuota}</Typography>
-            <Typography>start time: {eventDetails.startTime}</Typography>
-            <Typography>end time: {eventDetails.endTime}</Typography>
-            <Button onClick={handleDeleteEvent}>Hapus Jadwal</Button>
-          </Box>
-        </StyledDialog>
-      </Grid>
+              >
+                {/* Header dengan tombol toggle */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setOpen((prev) => !prev)}
+                >
+                  <Typography>Jadwal</Typography>
+                  <IconButton size="small">
+                    {open ? <ExpandLess /> : <ExpandMore />}
+                  </IconButton>
+                </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          gap: 2,
-          bgcolor: "red",
-          width: "100%",
-        }}
-      >
-        {/* <Grid item xs={9}> */}
-        <Box sx={{ bgcolor: "yellow" }}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DateCalendar
-              slotProps={{
-                day: {
-                  sx: {
-                    "&.Mui-selected": {
-                      borderColor: "#76B732",
-                    },
-                    "&.Mui-selected:focus": {
-                      backgroundColor: "transparent",
-                      color: "black",
-                      borderColor: "#76B732",
-                    },
-                  },
-                },
-              }}
-            />
-          </LocalizationProvider>
-          {events.length > 0 &&
-            events.map((ev, index) => (
-              <Box>
-                <Typography key={index} variant="body1">
-                  {events[index].extendedProps.doctor}
-                </Typography>
-                <Typography key={index} variant="body1">
-                  {events[index].extendedProps.startTime}
-                </Typography>
-                <Typography key={index} variant="body1">
-                  {events[index].extendedProps.doctor}
-                </Typography>
+                {/* Konten yang bisa dibuka/tutup */}
+                {open && (
+                  <>
+                    {events.length <= 0 ? (
+                      <Typography>Belum Ada Jadwal</Typography>
+                    ) : (
+                      events.map((ev, i) => (
+                        <CardScheduleInfo setForm={setForm} key={i} ev={ev} />
+                      ))
+                    )}
+                  </>
+                )}
               </Box>
-            ))}
-        </Box>
-        <Box sx={{ bgcolor: "blue", width: "76%" }}>
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[
-              timeGridPlugin,
-              interactionPlugin,
-              rrulePlugin,
-              dayGridPlugin,
-            ]}
-            locale="id"
-            timeZone="local"
-            // headerToolbar={false}
-            initialView="dayGridMonth"
-            events={events}
-            eventClick={handleEventClick}
-            headerToolbar={{
-              left: "prev,next",
-              center: "title",
-              // right: "dayGridMonth,timeGridWeek,timeGridDay",
-              right: "dayGridMonth,timeGridDay",
-            }}
-            height="90vh"
-            datesSet={handleFullCalendarDatesSet} // detect bulan berubah
-          />
-        </Box>
-      </Box>
-      {/* </Grid> */}
-    </Grid>
+            </Box>
+            <Box sx={{ width: "76%" }}>
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[
+                  timeGridPlugin,
+                  interactionPlugin,
+                  rrulePlugin,
+                  dayGridPlugin,
+                ]}
+                views={{
+                  timeGridDay: {
+                    titleFormat: {
+                      month: "long",
+                      year: "numeric",
+                      day: "numeric",
+                    },
+                    slotDuration: "01:00:00",
+                    slotLabelInterval: "01:00",
+                  },
+                }}
+                slotMinTime="00:00:00"
+                slotMaxTime="24:00:00"
+                eventOverlap={false}
+                eventDisplay="block"
+                locale="id"
+                timeZone="local"
+                nowIndicator={true}
+                selectable
+                dayMaxEvents
+                // headerToolbar={false}
+                initialView="dayGridMonth"
+                events={events}
+                eventClick={handleEventClick}
+                headerToolbar={{
+                  left: "prev,next",
+                  center: "title",
+                  // right: "dayGridMonth,timeGridWeek,timeGridDay",
+                  right: "dayGridMonth,timeGridDay",
+                }}
+                height="90vh"
+                datesSet={handleFullCalendarDatesSet} // detect bulan berubah
+              />
+            </Box>
+          </Box>
+          {/* </Grid> */}
+        </StyledContainer>
+      </Grid>
+    </>
   );
 }
