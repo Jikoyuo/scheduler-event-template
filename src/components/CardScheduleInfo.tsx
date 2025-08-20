@@ -6,15 +6,14 @@ import dayjs from "dayjs";
 interface CardScheduleInfoProps {
   ev: any;
   setForm: any;
+  handleDelete: any;
 }
 
 export default function CardScheduleInfo({
   ev,
   setForm,
+  handleDelete,
 }: CardScheduleInfoProps) {
-  useEffect(() => {
-    console.log("data kirim: ", ev);
-  });
   return (
     <>
       <Box
@@ -37,7 +36,7 @@ export default function CardScheduleInfo({
                 justifyContent: "space-between",
               }}
             >
-              <Typography variant="body1">{ev.extendedProps.type}</Typography>
+              <Typography variant="body1">{ev.extendedProps.doctor}</Typography>
               <Box
                 sx={{
                   bgcolor: ev.backgroundColor,
@@ -118,27 +117,35 @@ export default function CardScheduleInfo({
           </>
         )}
       </Box>
-      <CustomButtonFilled
-        type="button"
-        variant="outlined"
-        text="Ubah"
-        onClick={() => {
-          console.log("data ", ev.id, ": ", ev.extendedProps);
-          setForm((prev: any) => ({
-            ...prev,
-            title: ev.title,
-            doctor: ev.extendedProps.doctor,
-            location: ev.extendedProps.location,
-            insurance: ev.extendedProps.insurance,
-            startTime: ev.extendedProps.startTime,
-            endTime: ev.extendedProps.endTime,
-            quota: ev.extendedProps.quota,
-            backupQuota: ev.extendedProps.backupQuota,
-            type: ev.extendedProps.type,
-            repeatDays: ev.extendedProps.byweekdayTranslated,
-          }));
-        }}
-      />
+      <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+        <CustomButtonFilled
+          type="button"
+          variant="outlined"
+          text="Ubah"
+          onClick={() => {
+            console.log("data ", ev.id, ": ", ev.extendedProps);
+            setForm((prev: any) => ({
+              ...prev,
+              title: ev.title,
+              doctor: ev.extendedProps.doctor,
+              location: ev.extendedProps.location,
+              insurance: ev.extendedProps.insurance,
+              startTime: ev.extendedProps.startTime,
+              endTime: ev.extendedProps.endTime,
+              quota: ev.extendedProps.quota,
+              backupQuota: ev.extendedProps.backupQuota,
+              type: ev.extendedProps.type,
+              repeatDays: ev.extendedProps.byweekdayTranslated,
+            }));
+          }}
+        />
+        <CustomButtonFilled
+          text="Hapus Jadwal"
+          type="button"
+          variant="outlined"
+          onClick={() => handleDelete()}
+        />
+      </Box>
     </>
   );
 }

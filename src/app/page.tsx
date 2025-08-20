@@ -33,6 +33,8 @@ import scheduleType from "@/data/scheduleType";
 import { ScheduleTypes } from "@/types/schedule";
 import CardScheduleInfo from "@/components/CardScheduleInfo";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
+import CustomButtonUnfilled from "@/components/button/CustomButtonUnfilled";
+import AlertSuccess from "@/components/AlertSuccess";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -157,10 +159,10 @@ export default function CalendarPage() {
     location: "",
     type: "available",
     insurance: "",
-    startTime: "08:00",
-    endTime: "09:00",
-    quota: "10",
-    backupQuota: "5",
+    startTime: "",
+    endTime: "",
+    quota: "",
+    backupQuota: "",
     repeatDays: [],
     reason: "",
     startDate: null as Dayjs | null,
@@ -169,6 +171,7 @@ export default function CalendarPage() {
 
   const [events, setEvents] = useState<ScheduleTypes.RecurringEvent[]>([]);
   const [templateIdSelected, setTemplateIdSelected] = useState<String>("");
+  const [alert, setAlert] = useState<Boolean>(false);
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [scheduleOptions, setScheduleOptions] = useState<
     { label: string; value: string }[]
@@ -205,7 +208,28 @@ export default function CalendarPage() {
       };
     });
   };
-
+  const showTemporarySuccessCall = async () => {
+    setAlert(true);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setAlert(false);
+  };
+  const resetForm = () => {
+    setForm({
+      title: "",
+      doctor: "",
+      location: "",
+      type: "available",
+      insurance: "",
+      startTime: "",
+      endTime: "",
+      quota: "",
+      backupQuota: "",
+      repeatDays: [],
+      reason: "",
+      startDate: null as Dayjs | null,
+      endDate: null as Dayjs | null,
+    });
+  };
   const generateRecurringRule = () => {
     const byDay = form.repeatDays.map(
       (d) => ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][d]
@@ -222,19 +246,19 @@ export default function CalendarPage() {
 
   const handleSubmit = () => {
     const id = crypto.randomUUID();
-
-    // Jika unavailable → event blok (background event)
     if (form.type === "unavailable") {
       const newEvent = {
         id,
-        title: form.title || "Tidak tersedia",
-        start: dayjs(form.startDate).format("YYYY-MM-DD"), // bukan toISOString()
-        end: dayjs(form.endDate).add(1, "day").format("YYYY-MM-DD"), // exclusive
+        title: form.title || "Unavail",
+        start: dayjs(form.startDate).format("YYYY-MM-DD"),
+        end: dayjs(form.endDate).add(1, "day").format("YYYY-MM-DD"),
         allDay: true,
         backgroundColor: "red",
         extendedProps: {
           type: form.type,
           reason: form.reason,
+          doctor: form.doctor,
+          templateId: id,
         },
       };
       console.log("start: ", newEvent.start);
@@ -277,6 +301,8 @@ export default function CalendarPage() {
       //   console.log("avail: ", newEvent);
       // }
     }
+    showTemporarySuccessCall();
+    resetForm();
   };
   useEffect(() => {
     console.log("event: ", events);
@@ -294,6 +320,7 @@ export default function CalendarPage() {
     console.log("event filtered: ", filtered);
   }, [events]);
   const handleEventClick = (info: any) => {
+    console.log("id: ", info.event.extendedProps.templateId);
     setTemplateIdSelected(info.event.extendedProps.templateId || "");
     if (info.event.extendedProps.type === "unavailable") {
       setForm((prev) => ({
@@ -321,15 +348,15 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDeleteEvent = () => {
-    const templateId = templateIdSelected;
-    setEvents((prev) =>
-      prev.filter((e) => e.extendedProps.templateId !== templateId)
-    );
+  const handleDeleteEvent = (id: string) => {
+    console.log("hiii", id);
+    setEvents((prev) => prev.filter((e) => e.extendedProps.templateId !== id));
+    // resetForm();
   };
 
   return (
     <>
+      {alert && <AlertSuccess label="Berhasil membuat jadwal" />}
       <GlobalStyles />
       <Grid
         container
@@ -368,14 +395,18 @@ export default function CalendarPage() {
               {/* Jika tipe unavailable → form sederhana */}
               {form.type === "unavailable" && (
                 <>
-                  <CustomTextField
-                    name="title"
-                    value={form.title}
-                    onChange={(e: any) =>
-                      setForm({ ...form, title: e.target.value })
-                    }
-                    placeholder="Judul Libur"
-                  />
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                  >
+                    <Typography>Nama Dokter</Typography>
+                    <DropdownList
+                      loading={false}
+                      options={doctor}
+                      onChange={(value) => setForm({ ...form, doctor: value })}
+                      defaultValue={form.doctor}
+                      placeholder="Pilih Dokter"
+                    />
+                  </Box>
                   <CustomTextField
                     name="reason"
                     value={form.reason}
@@ -578,12 +609,20 @@ export default function CalendarPage() {
                   </Box>
                 </>
               )}
-              <CustomButtonFilled
-                text="Tambah Jadwal"
-                onClick={handleSubmit}
-                variant="outlined"
-                type="submit"
-              />
+              <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+                <CustomButtonUnfilled
+                  onClick={() => resetForm()}
+                  text="Batalkan"
+                  variant="outlined"
+                  type="button"
+                />
+                <CustomButtonFilled
+                  text="Tambah Jadwal"
+                  onClick={handleSubmit}
+                  variant="outlined"
+                  type="submit"
+                />
+              </Box>
             </Box>
           </Grid>
 
@@ -621,7 +660,12 @@ export default function CalendarPage() {
                       <Typography>Belum Ada Jadwal</Typography>
                     ) : (
                       events.map((ev, i) => (
-                        <CardScheduleInfo setForm={setForm} key={i} ev={ev} />
+                        <CardScheduleInfo
+                          handleDelete={() => handleDeleteEvent(ev.id)}
+                          setForm={setForm}
+                          key={i}
+                          ev={ev}
+                        />
                       ))
                     )}
                   </>
