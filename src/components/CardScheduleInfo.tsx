@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
-import React from "react";
+import React, { useEffect } from "react";
 import CustomButtonFilled from "./button/CustomButtonFilled";
+import dayjs from "dayjs";
 
 interface CardScheduleInfoProps {
   ev: any;
@@ -11,6 +12,9 @@ export default function CardScheduleInfo({
   ev,
   setForm,
 }: CardScheduleInfoProps) {
+  useEffect(() => {
+    console.log("data kirim: ", ev);
+  });
   return (
     <>
       <Box
@@ -24,36 +28,95 @@ export default function CardScheduleInfo({
           flexDirection: "column",
         }}
       >
-        <Typography variant="body1">{ev.extendedProps.doctor}</Typography>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography>Jam Operasional</Typography>
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
-            <Typography variant="body1">
-              {ev.extendedProps.startTime}
-            </Typography>
-            <Typography variant="body1">{ev.extendedProps.endTime}</Typography>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography>Hari Operasi</Typography>
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
-            <Typography variant="body1">
-              {ev.extendedProps.byweekdayIndonesia.join(" ")}
-            </Typography>
-          </Box>
-        </Box>
+        {ev.extendedProps.type === "unavailable" ? (
+          <>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography variant="body1">{ev.extendedProps.type}</Typography>
+              <Box
+                sx={{
+                  bgcolor: ev.backgroundColor,
+                  borderRadius: "32px",
+                  width: "16px",
+                  height: "16px",
+                }}
+              />
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography>Tanggal Unavailable</Typography>
+              <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+                <Typography
+                  sx={{ fontSize: 12, bgcolor: "red", minWidth: "100%" }}
+                >
+                  {dayjs(ev.start).locale("id").format("DD/MM/YYYY")} -{" "}
+                  {dayjs(ev.end).locale("id").format("DD/MM/YYYY")}
+                </Typography>
+              </Box>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography variant="body1">{ev.extendedProps.doctor}</Typography>
+              <Box
+                sx={{
+                  bgcolor: ev.backgroundColor,
+                  borderRadius: "32px",
+                  width: "16px",
+                  height: "16px",
+                }}
+              />
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography>Jam Operasional</Typography>
+              <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+                <Typography variant="body1">
+                  {ev.extendedProps.startTime}
+                </Typography>
+                <Typography variant="body1">
+                  {ev.extendedProps.endTime}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography>Hari Operasi</Typography>
+              <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+                <Typography variant="body1">
+                  {ev.extendedProps.byweekdayIndonesia.join(" ")}
+                </Typography>
+              </Box>
+            </Box>
+          </>
+        )}
       </Box>
       <CustomButtonFilled
         type="button"
