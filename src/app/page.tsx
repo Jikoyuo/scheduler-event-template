@@ -11,6 +11,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
+import resourceTimeGridPlugin from "@fullcalendar/resource-timegrid";
+import resourceDayGridPlugin from "@fullcalendar/resource-daygrid";
 
 import {
   Checkbox,
@@ -673,7 +675,7 @@ export default function CalendarPage() {
               </Box>
             </Box>
             <Box sx={{ width: "76%" }}>
-              <FullCalendar
+              {/* <FullCalendar
                 ref={calendarRef}
                 plugins={[
                   timeGridPlugin,
@@ -717,6 +719,68 @@ export default function CalendarPage() {
                 }}
                 height="90vh"
                 datesSet={handleFullCalendarDatesSet}
+              /> */}
+              <FullCalendar
+                plugins={[
+                  timeGridPlugin,
+                  dayGridPlugin,
+                  interactionPlugin,
+                  rrulePlugin,
+                  resourceTimeGridPlugin, // ⬅️ ini
+                  resourceDayGridPlugin, // ⬅️ ini (opsional kalau mau daygrid + resource)
+                ]}
+                initialView="resourceTimeGridDay"
+                slotDuration="01:00:00"
+                headerToolbar={{
+                  left: "prev,next",
+                  center: "title",
+                  right: "resourceTimeGridDay", // ⬅️ tambahin view baru
+                }}
+                resources={[
+                  {
+                    id: "ruang1",
+                    title: "Ruang Anggrek",
+                  },
+                  {
+                    id: "ruang2",
+                    title: "Ruang Mawar",
+                  },
+                  {
+                    id: "ruang3",
+                    title: "Ruang Melati",
+                  },
+                  {
+                    id: "ruang4",
+                    title: "Ruang Teratai",
+                  },
+                  {
+                    id: "ruang5",
+                    title: "Ruang Dahlia",
+                  },
+                  {
+                    id: "ruang6",
+                    title: "Ruang Kenanga",
+                  },
+                ]}
+                resourceAreaColumns={[
+                  { field: "title", headerContent: "Dokter / Ruang" },
+                ]}
+                events={[
+                  {
+                    id: "1",
+                    resourceId: "ruang1", 
+                    start: "2025-08-20T08:00:00",
+                    end: "2025-08-20T12:00:00",
+                    title: "Dr. Syahidan",
+                  },
+                  {
+                    id: "2",
+                    resourceId: "ruang2",
+                    start: "2025-08-20T10:00:00",
+                    end: "2025-08-20T11:00:00",
+                    title: "Dr. Windah",
+                  },
+                ]}
               />
             </Box>
           </Box>
