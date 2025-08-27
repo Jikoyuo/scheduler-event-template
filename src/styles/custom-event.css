@@ -1,0 +1,34 @@
+.custom-event {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Override style DayPilot */
+.calendar_default_colheader_inner {
+    background-color: inherit !important;
+    /* contoh ganti background */
+    color: black !important;
+    /* contoh ganti warna teks */
+    border-top: 1px solid transparent !important;
+    /* contoh ganti border */
+    border-right: 1px solid transparent !important;
+}
+
+.calendar_default_rowheader_inner {
+    background-color: inherit !important;
+    border-top: 1px solid transparent !important;
+    /* contoh ganti border */
+    /* border-right: 1px solid transparent !important; */
+}
+
+.calendar_default_corner_inner {
+    background-color: inherit !important;
+    border-top: 1px solid transparent !important;
+    /* contoh ganti border */
+    border-right: 1px solid transparent !important;
+}

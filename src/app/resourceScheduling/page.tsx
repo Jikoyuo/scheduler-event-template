@@ -14,7 +14,7 @@ import {
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import "../../styles/custom.css";
+import "../../styles/custom-event.css";
 
 type DPEvent = {
   id: string;
@@ -46,7 +46,7 @@ const SchedulerPage: React.FC = () => {
       id: DayPilot.guid(),
       resource: "B",
       text: "Marketing Team",
-      barColor: "#674ea7",
+      barColor: "transparent",
     },
     {
       start: DayPilot.Date.today().addHours(13).toString(),
@@ -54,7 +54,7 @@ const SchedulerPage: React.FC = () => {
       id: DayPilot.guid(),
       resource: "B",
       text: "Development Team",
-      barColor: "#a64d79",
+      barColor: "transparent",
     },
   ]);
 
@@ -104,15 +104,20 @@ const SchedulerPage: React.FC = () => {
       cellHeight: 100,
       businessBeginsHour: 7,
       businessEndsHour: 21,
+      durationBarVisible: false,
       cellDuration: 60, // 1 jam per baris
       scale: "Hour", // jam penuh (cast any di bawah)
-      timeFormat: "Clock12Hours",
+      timeFormat: "Clock24Hours",
       timeHeaders: [{ groupBy: "Hour", format: "HH:mm" }],
       columns: resources,
       onTimeRangeSelected: async () => dp.clearSelection(),
       eventMoveHandling: "Disabled",
       eventResizeHandling: "Disabled",
       timeRangeSelectedHandling: "Disabled",
+      onBeforeTimeHeaderRender: (args) => {
+        // Format waktu ke HH:mm
+        args.html = args.header.start.toString("HH:mm");
+      },
       onEventClick: (args) => {
         console.log("Event clicked:", args.e.data);
       },
@@ -171,7 +176,7 @@ const SchedulerPage: React.FC = () => {
             text: title,
             resource,
             id: DayPilot.guid(),
-            barColor: "#3f51b5",
+            barColor: "transparent",
           });
         }
       }
@@ -197,9 +202,7 @@ const SchedulerPage: React.FC = () => {
     <Box p={2}>
       <Card>
         <CardContent>
-          <Typography variant="h5" gutterBottom>
-            Meeting Room Scheduler
-          </Typography>
+          <Typography variant="h5">Meeting Room Scheduler</Typography>
 
           {/* Navigasi Tanggal */}
           <Box
@@ -314,7 +317,19 @@ const SchedulerPage: React.FC = () => {
           </Box>
 
           {/* DayPilot Calendar */}
-          <DayPilotCalendar ref={calendarRef} />
+          <DayPilotCalendar
+            ref={calendarRef}
+            viewType="Month"
+            durationBarVisible={true}
+            timeFormat="Clock24Hours"
+            onBeforeEventRender={(args) => {
+              args.data.backColor = "transparent"; // background event
+              args.data.fontColor = "black"; // warna teks
+              args.data.borderColor = "transparent"; // border
+              args.data.barColor = "transparent"; // bar kiri
+              args.data.cssClass = "custom-event"; // custom CSS
+            }}
+          />
         </CardContent>
       </Card>
     </Box>
