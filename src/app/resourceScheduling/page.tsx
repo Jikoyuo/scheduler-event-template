@@ -11,16 +11,53 @@ import {
   Grid,
   Button,
   MenuItem,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
-import "../../styles/custom-calender.css";
+import "../../styles/custom.css";
+
+type DPEvent = {
+  id: string;
+  text: string;
+  start: string; // ISO string
+  end: string; // ISO string
+  resource: string;
+  barColor?: string;
+  eventCssClass?: string;
+};
+
 const SchedulerPage: React.FC = () => {
-  // State untuk form input
+  // Form state
   const [title, setTitle] = useState("");
   const [resource, setResource] = useState("");
   const [startTime, setStartTime] = useState("07:00");
   const [endTime, setEndTime] = useState("08:00");
+  const [selectedDays, setSelectedDays] = useState<string[]>([]); // Sunday..Saturday (EN)
 
+  // Calendar refs/state
   const calendarRef = useRef<DayPilotCalendar>(null);
+  const [currentDate, setCurrentDate] = useState(DayPilot.Date.today());
+
+  // ✅ Events disimpan di React state (source of truth)
+  const [events, setEvents] = useState<DPEvent[]>([
+    {
+      start: DayPilot.Date.today().addHours(10).toString(),
+      end: DayPilot.Date.today().addHours(12).toString(),
+      id: DayPilot.guid(),
+      resource: "B",
+      text: "Marketing Team",
+      barColor: "#674ea7",
+    },
+    {
+      start: DayPilot.Date.today().addHours(13).toString(),
+      end: DayPilot.Date.today().addHours(15).toString(),
+      id: DayPilot.guid(),
+      resource: "B",
+      text: "Development Team",
+      barColor: "#a64d79",
+    },
+  ]);
+
   const resources = [
     { name: "Meeting Room A", id: "A" },
     { name: "Meeting Room B", id: "B" },
@@ -43,55 +80,58 @@ const SchedulerPage: React.FC = () => {
     "16:00",
     "17:00",
   ];
+
+  // Map checkbox (ID labels Indonesia → value English)
+  const daysMap = [
+    { label: "Minggu", value: "Sunday" },
+    { label: "Senin", value: "Monday" },
+    { label: "Selasa", value: "Tuesday" },
+    { label: "Rabu", value: "Wednesday" },
+    { label: "Kamis", value: "Thursday" },
+    { label: "Jumat", value: "Friday" },
+    { label: "Sabtu", value: "Saturday" },
+  ];
+
+  // Inisialisasi / update konfigurasi kalender saat ganti tanggal
   useEffect(() => {
     if (!calendarRef.current) return;
-
     const dp = calendarRef.current.control;
 
     dp.update({
       viewType: "Resources",
       headerHeight: 50,
-      startDate: DayPilot.Date.today(),
-      cellHeight: 50,
-      businessBeginsHour: 8,
-      businessEndsHour: 20,
-      timeFormat: "Clock24Hours",
-      theme: "custom-calender",
+      startDate: currentDate, // ← tanggal aktif
+      cellHeight: 100,
+      businessBeginsHour: 7,
+      businessEndsHour: 21,
+      cellDuration: 60, // 1 jam per baris
+      scale: "Hour", // jam penuh (cast any di bawah)
+      timeFormat: "Clock12Hours",
+      timeHeaders: [{ groupBy: "Hour", format: "HH:mm" }],
       columns: resources,
-      onTimeRangeSelected: async () => {
-        dp.clearSelection(); // Nonaktifkan modal default
-      },
-      eventMoveHandling: "Disabled", // Tidak bisa drag event
-      eventResizeHandling: "Disabled", // Tidak bisa resize event
+      onTimeRangeSelected: async () => dp.clearSelection(),
+      eventMoveHandling: "Disabled",
+      eventResizeHandling: "Disabled",
       timeRangeSelectedHandling: "Disabled",
-      // Event click
       onEventClick: (args) => {
         console.log("Event clicked:", args.e.data);
       },
-    });
+    } as any);
+  }, [currentDate]);
 
-    // Load event awal
-    const events = [
-      {
-        start: DayPilot.Date.today().addHours(10),
-        end: DayPilot.Date.today().addHours(12),
-        id: DayPilot.guid(),
-        resource: "B",
-        text: "Marketing Team",
-        barColor: "#674ea7",
-      },
-      {
-        start: DayPilot.Date.today().addHours(13),
-        end: DayPilot.Date.today().addHours(15),
-        id: DayPilot.guid(),
-        resource: "B",
-        text: "Development Team",
-        barColor: "#a64d79",
-      },
-    ];
-
+  // Sinkronkan events state → DayPilot setiap kali events berubah
+  useEffect(() => {
+    if (!calendarRef.current) return;
+    const dp = calendarRef.current.control;
     dp.update({ events });
-  }, []);
+  }, [events]);
+
+  const handleDaySelection = (value: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value]
+    );
+  };
+
   const addCustomEvent = () => {
     if (!title || !resource || !startTime || !endTime) {
       alert("Lengkapi semua field!");
@@ -103,36 +143,55 @@ const SchedulerPage: React.FC = () => {
       return;
     }
 
-    const dp = calendarRef.current?.control;
-    if (!dp) return;
+    // Generate recurring 1 tahun ke depan pada hari yang dipilih
+    const now = new DayPilot.Date(currentDate); // mulai dari tanggal yang sedang dilihat
+    const oneYearLater = now.addDays(365);
 
-    const date = DayPilot.Date.today().toString("yyyy-MM-dd");
+    const eventsToAdd: DPEvent[] = [];
+    let cursor = now;
 
-    const startIndex = timeOptions.indexOf(startTime);
-    const endIndex = timeOptions.indexOf(endTime);
-    const groupId = DayPilot.guid();
+    while (cursor < oneYearLater) {
+      const jsDate = cursor.toDate();
+      const dayName = jsDate.toLocaleDateString("en-US", { weekday: "long" });
 
-    for (let i = startIndex; i < endIndex; i++) {
-      const slotStart = timeOptions[i];
-      const slotEnd = timeOptions[i + 1];
+      if (selectedDays.length === 0 || selectedDays.includes(dayName)) {
+        const dateStr = cursor.toString("yyyy-MM-dd");
 
-      dp.events.add({
-        start: `${date}T${slotStart}:00`,
-        end: `${date}T${slotEnd}:00`,
-        text: title,
-        resource: resource,
-        id: DayPilot.guid(),
-        groupId: groupId,
-        barColor: "#3f51b5",
-      });
+        const startIndex = timeOptions.indexOf(startTime);
+        const endIndex = timeOptions.indexOf(endTime);
+
+        // Tetap ikuti pola kamu: 1 event per jam-slot (bisa dijadikan single event kalau mau)
+        for (let i = startIndex; i < endIndex; i++) {
+          const slotStart = timeOptions[i];
+          const slotEnd = timeOptions[i + 1];
+
+          eventsToAdd.push({
+            start: `${dateStr}T${slotStart}:00`,
+            end: `${dateStr}T${slotEnd}:00`,
+            text: title,
+            resource,
+            id: DayPilot.guid(),
+            barColor: "#3f51b5",
+          });
+        }
+      }
+
+      cursor = cursor.addDays(1);
     }
+
+    // ✅ Tambahkan ke state (bukan langsung dp.update)
+    setEvents((prev) => [...prev, ...eventsToAdd]);
 
     // Reset form
     setTitle("");
     setResource("");
     setStartTime("07:00");
     setEndTime("08:00");
+    setSelectedDays([]);
   };
+
+  const goPrev = () => setCurrentDate((d) => d.addDays(-1));
+  const goNext = () => setCurrentDate((d) => d.addDays(1));
 
   return (
     <Box p={2}>
@@ -142,7 +201,25 @@ const SchedulerPage: React.FC = () => {
             Meeting Room Scheduler
           </Typography>
 
-          {/* Form untuk tambah event */}
+          {/* Navigasi Tanggal */}
+          <Box
+            mb={2}
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Button variant="outlined" onClick={goPrev}>
+              Prev
+            </Button>
+            <Typography variant="h6">
+              {currentDate.toString("dddd, MMMM d, yyyy")}
+            </Typography>
+            <Button variant="outlined" onClick={goNext}>
+              Next
+            </Button>
+          </Box>
+
+          {/* Form tambah event */}
           <Box mb={2}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={3}>
@@ -210,9 +287,29 @@ const SchedulerPage: React.FC = () => {
                   onClick={addCustomEvent}
                   sx={{ height: "100%" }}
                 >
-                  Add Event
+                  Add Recurring Event
                 </Button>
               </Grid>
+            </Grid>
+          </Box>
+
+          {/* Checkbox Hari */}
+          <Box mb={2}>
+            <Typography variant="subtitle1">Pilih Hari:</Typography>
+            <Grid container>
+              {daysMap.map((day) => (
+                <Grid item key={day.value}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedDays.includes(day.value)}
+                        onChange={() => handleDaySelection(day.value)}
+                      />
+                    }
+                    label={day.label}
+                  />
+                </Grid>
+              ))}
             </Grid>
           </Box>
 
