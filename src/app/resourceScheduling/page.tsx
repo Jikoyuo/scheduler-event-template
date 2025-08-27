@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { DayPilot, DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 import { Card, CardContent, Typography, Box } from "@mui/material";
-
+import "../../styles/custom-calender.css";
 const SchedulerPage: React.FC = () => {
   const calendarRef = useRef<DayPilotCalendar>(null);
 
@@ -12,11 +12,18 @@ const SchedulerPage: React.FC = () => {
 
     const dp = calendarRef.current.control;
 
+    
+
     // Konfigurasi Calendar
     dp.update({
       viewType: "Resources",
       headerHeight: 50,
       startDate: DayPilot.Date.today(),
+      cellHeight: 50,
+      businessBeginsHour: 8,
+      businessEndsHour: 20,
+      timeFormat: "Clock24Hours",
+      theme: "custom-calender", 
       columns: [
         { name: "Meeting Room A", id: "A" },
         { name: "Meeting Room B", id: "B" },
@@ -26,7 +33,7 @@ const SchedulerPage: React.FC = () => {
         { name: "Meeting Room F", id: "F" },
       ],
       onTimeRangeSelected: async (args) => {
-        const modal = await DayPilot.Modal.prompt("New event name:", "Event");
+        const modal = await DayPilot.Modal.prompt("Nama event:", "Dr. Syahidan");
         if (modal.canceled) return;
 
         dp.events.add({
@@ -39,6 +46,7 @@ const SchedulerPage: React.FC = () => {
 
         dp.clearSelection();
       },
+      
     });
 
     // Load event awal
@@ -71,10 +79,13 @@ const SchedulerPage: React.FC = () => {
           <Typography variant="h5" gutterBottom>
             Meeting Room Scheduler
           </Typography>
+          <Box>
           <DayPilotCalendar
             ref={calendarRef}
+            
             // style={{ height: "600px", width: "100%" }}
           />
+          </Box>
         </CardContent>
       </Card>
     </Box>
