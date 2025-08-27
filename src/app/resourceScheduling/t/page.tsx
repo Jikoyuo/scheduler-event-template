@@ -8,19 +8,21 @@ import {
   Typography,
   Box,
   TextField,
-  Grid,
   Button,
   MenuItem,
+  Grid,
 } from "@mui/material";
-import "../../styles/custom-calender.css";
+
 const SchedulerPage: React.FC = () => {
+  const calendarRef = useRef<DayPilotCalendar>(null);
+
   // State untuk form input
   const [title, setTitle] = useState("");
   const [resource, setResource] = useState("");
   const [startTime, setStartTime] = useState("07:00");
   const [endTime, setEndTime] = useState("08:00");
 
-  const calendarRef = useRef<DayPilotCalendar>(null);
+  // Data resource dan jam
   const resources = [
     { name: "Meeting Room A", id: "A" },
     { name: "Meeting Room B", id: "B" },
@@ -43,6 +45,7 @@ const SchedulerPage: React.FC = () => {
     "16:00",
     "17:00",
   ];
+
   useEffect(() => {
     if (!calendarRef.current) return;
 
@@ -52,11 +55,6 @@ const SchedulerPage: React.FC = () => {
       viewType: "Resources",
       headerHeight: 50,
       startDate: DayPilot.Date.today(),
-      cellHeight: 50,
-      businessBeginsHour: 8,
-      businessEndsHour: 20,
-      timeFormat: "Clock24Hours",
-      theme: "custom-calender",
       columns: resources,
       onTimeRangeSelected: async () => {
         dp.clearSelection(); // Nonaktifkan modal default
@@ -92,12 +90,15 @@ const SchedulerPage: React.FC = () => {
 
     dp.update({ events });
   }, []);
+
+  // Fungsi untuk tambah event
   const addCustomEvent = () => {
     if (!title || !resource || !startTime || !endTime) {
       alert("Lengkapi semua field!");
       return;
     }
 
+    // Validasi jam
     if (timeOptions.indexOf(endTime) <= timeOptions.indexOf(startTime)) {
       alert("Jam selesai harus lebih besar dari jam mulai!");
       return;
@@ -108,24 +109,14 @@ const SchedulerPage: React.FC = () => {
 
     const date = DayPilot.Date.today().toString("yyyy-MM-dd");
 
-    const startIndex = timeOptions.indexOf(startTime);
-    const endIndex = timeOptions.indexOf(endTime);
-    const groupId = DayPilot.guid();
-
-    for (let i = startIndex; i < endIndex; i++) {
-      const slotStart = timeOptions[i];
-      const slotEnd = timeOptions[i + 1];
-
-      dp.events.add({
-        start: `${date}T${slotStart}:00`,
-        end: `${date}T${slotEnd}:00`,
-        text: title,
-        resource: resource,
-        id: DayPilot.guid(),
-        groupId: groupId,
-        barColor: "#3f51b5",
-      });
-    }
+    dp.events.add({
+      start: `${date}T${startTime}:00`,
+      end: `${date}T${endTime}:00`,
+      text: title,
+      resource: resource,
+      id: DayPilot.guid(),
+      barColor: "#3f51b5",
+    });
 
     // Reset form
     setTitle("");
