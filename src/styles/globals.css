@@ -1,0 +1,58 @@
+/* === Container utama (scheduler box) === */
+.scheduler-glass {
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+/* === Header atas (tanggal, navigasi) === */
+.scheduler-glass .calendar_default_corner {
+    background: transparent !important;
+    border: none !important;
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+    padding-bottom: 8px;
+}
+
+/* === Kolom jam di sebelah kiri === */
+.scheduler-glass .calendar_default_rowheader {
+    background: transparent !important;
+    border-right: 1px solid #e0e0e0 !important;
+    font-size: 13px;
+    color: #555;
+    text-align: right;
+    padding-right: 6px;
+}
+
+/* === Header resource (ruangan) === */
+.scheduler-glass .calendar_default_colheader {
+    background: transparent !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    font-weight: 500;
+    font-size: 14px;
+    color: #333;
+    text-align: center;
+}
+
+/* === Grid cell (jam & slot) === */
+.scheduler-glass .calendar_default_cell {
+    border: 1px solid #f0f0f0 !important;
+    background: transparent !important;
+}
+
+/* === Event (jadwal dokter) === */
+.scheduler-glass .calendar_default_event {
+    border-radius: 12px;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff !important;
+    background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+}
