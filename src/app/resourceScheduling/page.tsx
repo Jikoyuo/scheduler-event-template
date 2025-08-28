@@ -319,7 +319,6 @@ const SchedulerPage: React.FC = () => {
           {/* DayPilot Calendar */}
           <DayPilotCalendar
             ref={calendarRef}
-            viewType="Month"
             durationBarVisible={true}
             timeFormat="Clock24Hours"
             onBeforeEventRender={(args) => {
